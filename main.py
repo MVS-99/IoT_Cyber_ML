@@ -14,15 +14,16 @@ def print_message(color, message):
     print(color + border + Fore.RESET)
 
 def welcome_message():
+    control = False
     print_message(Fore.GREEN, "\nWelcome to the analysis of the IoT-Edge dataset.\n Let's run the prerequisites check, please be patient")
     
     print_message(Fore.BLUE, "------------- RUNNING: LIBRARY CHECK -------------")
     library_check()
 
     print_message(Fore.BLUE, "------------- RUNNING: KAGGLE API JSON CHECK -------------")
-    kaggle_api_json()
+    control = kaggle_api_json()
 
-    if (kaggle_api_json == True):
+    if (control == True):
         if os.path.exists("preprocessed_DNN.csv"):
             print_message(Fore.YELLOW, "WARNING: The preprocessed dataset has already been created, generation process will be bypassed.")
 
@@ -43,19 +44,27 @@ def welcome_message():
 
 def main():
     # Initiate the user interaction with the data-set, preprocessing and prerequisites
-    welcome_message()
-    if(welcome_message == True):
+    control_welcome = False
+    control_welcome = welcome_message()
+    if(control_welcome == True):
         import fselection
         import eda
+        import pandas as pd
         # Initiate EDA analysis
-        print_message(Fore.BLUE, "------------- RUNNING: EDA () ANALYSIS -------------")
+        print_message(Fore.BLUE, "------------- RUNNING: EDA (Exploratory Data Analysis) -------------")
         eda.run_eda()
         print_message(Fore.BLUE, "------------- RUNNING: FEATURE SELECTION -------------")
         # Select features
-        df = fselection.select_features(df, 'Attack_type', 10)
+        df = pd.read_csv('preprocessed_DNN.csv', low_memory=False)
         print_message(Fore.BLUE, "------------- RUNNING: OUTLIER DETECTION AND REMOVAL -------------")
         # Detect and remove outliers
-        df = fselection.detect_and_remove_outliers(df, 20, 0.1)
+        for num_features in range(22, 0, -1):
+            # Perform feature selection
+            df_features_type = fselection.select_features(df, 'Attack_type', 'Attack_label',num_features)
+            df_features_label = fselection.select_features(df, 'Attack_label', 'Attack_type',num_features)
+            # Perform outlier detection and removal using one-class SVM
+            df_outliers_type = fselection.detect_and_remove_outliers_svm(df_features_type, nu=0.1, kernel='linear')
+            df_outliers_label = fselection.detect_and_remove_outliers_svm(df_features_label, nu=0.1, kernel='linear')
 
 
 if __name__ == "__main__":

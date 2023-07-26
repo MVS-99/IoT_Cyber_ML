@@ -5,6 +5,9 @@ def run_eda():
     import seaborn as sns
     from sklearn.preprocessing import LabelEncoder
     
+    # Create a dictionary to hold the abbreviations
+    abbreviations = {}
+
     # Loading the preprocessed data
     df = pd.read_csv('preprocessed_DNN.csv', low_memory=False)
 
@@ -40,19 +43,6 @@ def run_eda():
     # Checking the correlation between features
     correlation = df.corr()
 
-    # Visualizing the correlation using a heatmap
-    plt.figure(figsize=(11.7, 8.27))
-    sns.set(style="whitegrid")
-    heatmap = sns.heatmap(correlation, annot=False, cmap='coolwarm', linewidths=0.5)
-    plt.title('Correlation Heatmap')
-    # Rotate the x-axis labels for better readability
-    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
-    heatmap.set_yticklabels(heatmap.get_yticklabels(), fontsize=12)
-    # Adjust the layout and remove unnecessary spines
-    plt.tight_layout()
-    sns.despine(left=True, bottom=True)
-    plt.show()
-
     # Selecting and visualizing the top 3 features with the highest correlation to the target variable
     correlation_target = abs(correlation['Attack_type'])
     top_correlations = correlation_target.nlargest(4)
@@ -67,11 +57,14 @@ def run_eda():
         plt.xticks(rotation=90)
         plt.show()
 
-        # Selecting and visualizing the top 3 features with the highest correlation to the target variable
+    # Selecting and visualizing the top 3 features with the highest correlation to the target variable
     correlation_target_1 = abs(correlation['Attack_label'])
     top_correlations_1 = correlation_target_1.nlargest(4)
     print('Top 3 features with the highest correlation to Attack_label:')
     print(top_correlations_1)
+
+    # Get the feature names of the top correlations, excluding 'Attack_label'
+    top_correlations_1 = [feature for feature in top_correlations_1.index if feature != 'Attack_label']
 
     # Visualizing the relationship between these top 3 features and the target variable using boxplots
     for feature in top_correlations_1:
@@ -79,4 +72,21 @@ def run_eda():
         sns.countplot(x=feature, hue='Attack_label', data=df)
         plt.title(f'Relationship between Attack_label and {feature}')
         plt.xticks(rotation=90)
+        plt.legend(title='Is an attack?', labels=['No', 'Yes'])
         plt.show()
+
+    # Visualizing the correlation using a heatmap
+    plt.figure(figsize=(20, 15))
+    sns.set(style="whitegrid")
+
+    heatmap = sns.heatmap(correlation, annot=False, cmap='coolwarm', linewidths=0.5)
+
+    plt.title('Correlation Heatmap')
+    # Rotate the x-axis and y-axis labels for better readability
+    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
+    heatmap.set_yticklabels(heatmap.get_yticklabels(), fontsize=12)  # Added rotation for y-axis
+
+    # Adjust the layout and remove unnecessary spines
+    plt.tight_layout()
+    sns.despine(left=True, bottom=True)
+    plt.show()

@@ -1,30 +1,57 @@
 # Import necessary libraries
-from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif
-from sklearn.neighbors import LocalOutlierFactor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import OneClassSVM
 
-def select_features(df, target_column, k):
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+
+def select_features(df, target_column, exclude_column, num_features):
     """
-    Select the k best features from df based on their relationship with the target_column.
+    Select features based on their importance for predicting whether an attack occurs.
     """
-    # Convert categorical target variable to numerical if it's not
-    df[target_column] = df[target_column].astype('category').cat.codes
+    # Ensure target column is numeric
+    if df[target_column].dtype == 'object':
+        df[target_column] = df[target_column].astype('category').cat.codes
 
-    # Select top k features
-    selector = SelectKBest(score_func=mutual_info_classif, k=k)
-    X_new = selector.fit_transform(df.drop(target_column, axis=1), df[target_column])
+    # Define features
+    features = df.drop([target_column, exclude_column], axis=1)
 
-    # Get the names of the selected features
-    selected_features = df.drop(target_column, axis=1).columns[selector.get_support()]
+    # Fit a random forest classifier to the data
+    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    clf.fit(features, df[target_column])
 
-    return df[selected_features]
+    # Get feature importances
+    importances = clf.feature_importances_
 
-def detect_and_remove_outliers(df, n_neighbors, contamination):
+    # Create a DataFrame of features and importances
+    features_importances = pd.DataFrame({'Feature': features.columns, 'Importance': importances})
+
+    # Sort the DataFrame by importance in descending order and select top features
+    features_importances = features_importances.sort_values(by='Importance', ascending=False).head(num_features)
+
+    # Plot the feature importances
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x='Importance', y='Feature', data=features_importances)
+    plt.xscale('log')
+    if target_column == "Attack_label":
+        plt.title('Feature Importances for Attack Detection')
+    else:
+        plt.title('Feature Importances for Attack Type Classification')
+    plt.show()
+
+    # Create a new dataframe containing only the most important features
+    df = df[features_importances['Feature'].tolist() + [target_column]]
+
+    return df
+
+def detect_and_remove_outliers_svm(df, nu, kernel):
     """
-    Use the Local Outlier Factor method to detect and remove outliers from df.
+    Use the One-class SVM method to detect and remove outliers from df.
     """
-    # Use Local Outlier Factor to identify outliers
-    lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
-    y_pred = lof.fit_predict(df)
+    # Use One-class SVM to identify outliers
+    oc_svm = OneClassSVM(nu=nu, kernel=kernel)
+    y_pred = oc_svm.fit_predict(df)
 
     # Filter out the outliers
     mask = y_pred != -1
