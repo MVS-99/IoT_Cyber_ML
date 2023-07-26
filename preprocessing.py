@@ -59,12 +59,13 @@ def kaggle_api_json():
     # Check if the kaggle.json file exists
     if os.path.exists(kaggle_json_path):
         print("The API JSON file is found.")
+        # Set appropriate permissions for kaggle.json
+        subprocess.run(["chmod", "600", kaggle_json_path])
+        return True
     else:
         print("The kaggle.json file is not found in the directory.")
         print("Please read the instructions on how to obtain it from the following link: https://www.kaggle.com/docs/api")
-
-    # Set appropriate permissions for kaggle.json
-    subprocess.run(["chmod", "600", kaggle_json_path])
+        return False
 
 def download_raw_csv():
     # Download the dataset
