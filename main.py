@@ -24,7 +24,7 @@ def welcome_message():
     control = kaggle_api_json()
 
     if (control == True):
-        if os.path.exists("preprocessed_DNN.csv"):
+        if os.listdir("./CSV"):
             print_message(Fore.YELLOW, "WARNING: The preprocessed dataset has already been created, generation process will be bypassed.")
 
         else:
@@ -49,22 +49,21 @@ def main():
     if(control_welcome == True):
         import fselection
         import eda
+        import modeling
         import pandas as pd
         # Initiate EDA analysis
         print_message(Fore.BLUE, "------------- RUNNING: EDA (Exploratory Data Analysis) -------------")
         eda.run_eda()
         print_message(Fore.BLUE, "------------- RUNNING: FEATURE SELECTION -------------")
         # Select features
-        df = pd.read_csv('preprocessed_DNN.csv', low_memory=False)
-        print_message(Fore.BLUE, "------------- RUNNING: OUTLIER DETECTION AND REMOVAL -------------")
-        # Detect and remove outliers
-        for num_features in range(22, 0, -1):
-            # Perform feature selection
-            df_features_type = fselection.select_features(df, 'Attack_type', 'Attack_label',num_features)
-            df_features_label = fselection.select_features(df, 'Attack_label', 'Attack_type',num_features)
-            # Perform outlier detection and removal using one-class SVM
-            df_outliers_type = fselection.detect_and_remove_outliers_svm(df_features_type, nu=0.1, kernel='linear')
-            df_outliers_label = fselection.detect_and_remove_outliers_svm(df_features_label, nu=0.1, kernel='linear')
+        df_train = pd.read_csv('CSV/preprocessed_DNN.csv', low_memory=False)
+        df_features_type = fselection.select_features(df_train, 'Attack_type', 'Attack_label',21)
+        df_features_label = fselection.select_features(df_train, 'Attack_label', 'Attack_type',21)
+        df_features_type.to_csv('CSV/type_dataframe_DNN.csv', encoding='utf-8', index=False)
+        df_features_label.to_csv('CSV/label_dataframe_DNN.csv', encoding='utf-8', index=False)
+        
+        print_message(Fore.BLUE, "------------- RUNNING: MODELING -------------")
+        modeling.dnn(df_features_label,df_features_type)
 
 
 if __name__ == "__main__":

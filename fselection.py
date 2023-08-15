@@ -44,17 +44,3 @@ def select_features(df, target_column, exclude_column, num_features):
     df = df[features_importances['Feature'].tolist() + [target_column]]
 
     return df
-
-def detect_and_remove_outliers_svm(df, nu, kernel):
-    """
-    Use the One-class SVM method to detect and remove outliers from df.
-    """
-    # Use One-class SVM to identify outliers
-    oc_svm = OneClassSVM(nu=nu, kernel=kernel)
-    y_pred = oc_svm.fit_predict(df)
-
-    # Filter out the outliers
-    mask = y_pred != -1
-    df = df[mask]
-
-    return df

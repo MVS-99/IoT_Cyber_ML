@@ -9,24 +9,24 @@ def run_eda():
     abbreviations = {}
 
     # Loading the preprocessed data
-    df = pd.read_csv('preprocessed_DNN.csv', low_memory=False)
+    df_train = pd.read_csv('CSV/preprocessed_DNN.csv', low_memory=False)
 
     # Displaying the first few rows of the DataFrame
-    print(df.head())
+    print(df_train.head())
 
     # Summary statistics of the DataFrame
-    print(df.describe())
+    print(df_train.describe())
 
     # Checking for missing values
-    print(df.isnull().sum())
+    print(df_train.isnull().sum())
 
     # Visualizing the distribution of the target variable ('Attack_type')
     # Get the frequency count of each attack type
-    attack_counts = df['Attack_type'].value_counts()
+    attack_counts_train = df_train['Attack_type'].value_counts()
 
     plt.figure(figsize=(15, 8))
     sns.set(style="whitegrid")
-    sns.barplot(x=attack_counts.index, y=attack_counts.values, alpha=0.8, palette='viridis')
+    sns.barplot(x=attack_counts_train.index, y=attack_counts_train.values, alpha=0.8, palette='viridis')
     plt.yscale("log")
     plt.title('Number of Attacks by Type (Log Scale)', fontsize=16)
     plt.ylabel('Number of Attacks (Log Scale)', fontsize=14)
@@ -38,10 +38,10 @@ def run_eda():
 
     # Encoding 'Attack_type' to numerical categories
     label_encoder = LabelEncoder()
-    df['Attack_type'] = label_encoder.fit_transform(df['Attack_type'])
+    df_train['Attack_type'] = label_encoder.fit_transform(df_train['Attack_type'])
 
     # Checking the correlation between features
-    correlation = df.corr()
+    correlation = df_train.corr(method='spearman')
 
     # Selecting and visualizing the top 3 features with the highest correlation to the target variable
     correlation_target = abs(correlation['Attack_type'])
@@ -52,7 +52,7 @@ def run_eda():
     # Visualizing the relationship between these top 3 features and the target variable using boxplots
     for feature in top_correlations.index[1:]:
         plt.figure(figsize=(10, 6))
-        sns.boxplot(x='Attack_type', y=feature, data=df)
+        sns.boxplot(x='Attack_type', y=feature, data=df_train)
         plt.title(f'Relationship between Attack_type and {feature}')
         plt.xticks(rotation=90)
         plt.show()
@@ -68,11 +68,14 @@ def run_eda():
 
     # Visualizing the relationship between these top 3 features and the target variable using boxplots
     for feature in top_correlations_1:
+        # Create a combined feature
+        df_train['combined'] = df_train[feature].astype(str) + "-" + df_train['Attack_label'].astype(str)
+
         plt.figure(figsize=(10, 6))
-        sns.countplot(x=feature, hue='Attack_label', data=df)
+        sns.countplot(x='combined', data=df_train, order=['0-0', '0-1', '1-0', '1-1'])
         plt.title(f'Relationship between Attack_label and {feature}')
+        plt.xlabel(f'{feature} - Attack_label')
         plt.xticks(rotation=90)
-        plt.legend(title='Is an attack?', labels=['No', 'Yes'])
         plt.show()
 
     # Visualizing the correlation using a heatmap

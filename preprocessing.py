@@ -52,6 +52,13 @@ def library_check():
         # Install the kaggle package
         subprocess.run(["conda", "install", "-c", "conda-forge", "scikit-learn"])
 
+    if 'tensorflow' in {pkg.key for pkg in pkg_resources.working_set}:
+        print("The Tensorflow package is already installed.")
+    else:
+        print("The Tensorflow package is not installed. Initiating installation...")
+        # Install the kaggle package
+        subprocess.run(["conda", "install", "-c", "conda-forge", "tensorflow"])
+
 def kaggle_api_json():
     # Define the path to the kaggle.json file
     kaggle_json_path = os.path.expanduser("~/.kaggle/kaggle.json")
@@ -72,7 +79,7 @@ def download_raw_csv():
     subprocess.run(["kaggle", "datasets", "download", "-d", "mohamedamineferrag/edgeiiotset-cyber-security-dataset-of-iot-iiot", "-f", "Edge-IIoTset dataset/Selected dataset for ML and DL/DNN-EdgeIIoT-dataset.csv"])
 
     # Unzip the downloaded dataset
-    subprocess.run(["unzip", "DNN-EdgeIIoT-dataset.csv.zip"])
+    subprocess.run(["unzip", "DNN-EdgeIIoT-dataset.csv.zip", "-d", "CSV"])
 
     # Remove the zip file
     os.remove("DNN-EdgeIIoT-dataset.csv.zip")
@@ -83,9 +90,14 @@ def preprocessing():
     import numpy as np
     
     from sklearn.utils import shuffle
+    from sklearn.model_selection import train_test_split
 
     # Reading the Datasets' CSV file to a Pandas DataFrame
-    df = pd.read_csv('DNN-EdgeIIoT-dataset.csv', low_memory=False)
+    df = pd.read_csv('CSV/DNN-EdgeIIoT-dataset.csv', low_memory=False)
+    
+    # Using stratified sampling based on the 'attack_label' column
+    #df_train, df_sliced = train_test_split(df, test_size=1/3, stratify=df['Attack_label'], random_state=42)
+
   # Columns to drop
     drop_columns = ["frame.time", "ip.src_host", "ip.dst_host", "arp.src.proto_ipv4","arp.dst.proto_ipv4", 
                     "http.file_data","http.request.full_uri","icmp.transmit_timestamp",
@@ -93,15 +105,23 @@ def preprocessing():
                     "tcp.dstport", "udp.port", "mqtt.msg"]
 
     # Dropping unnecessary columns
+    #df_sliced.drop(drop_columns, axis=1, inplace=True)
+    #df_train.drop(drop_columns, axis=1, inplace=True)
     df.drop(drop_columns, axis=1, inplace=True)
 
     # Dropping NaN values
+    #df_sliced.dropna(axis=0, how='any', inplace=True)
+    #df_train.dropna(axis=0, how='any', inplace=True)
     df.dropna(axis=0, how='any', inplace=True)
 
     # Dropping duplicate rows
+    #df_sliced.drop_duplicates(subset=None, keep="first", inplace=True)
+    #df_train.drop_duplicates(subset=None, keep="first", inplace=True)
     df.drop_duplicates(subset=None, keep="first", inplace=True)
 
     # Shuffling the dataframe
+    #df_sliced = shuffle(df_sliced)
+    #df_train = shuffle(df_train)
     df = shuffle(df)
 
     # OBJECTIVE: Categorical data encoding (Dummy Encoding)
@@ -120,8 +140,20 @@ def preprocessing():
         # Encoding categorical features
     categorical_features = ['http.request.method', 'http.referer', 'http.request.version', 'dns.qry.name.len', 
                             'mqtt.conack.flags', 'mqtt.protoname', 'mqtt.topic']
+    
+    #for feature in categorical_features:
+        #if feature in df_sliced.columns:
+            #encode_text_dummy(df_sliced, feature)
+    
+    #for feature in categorical_features:
+        #if feature in df_train.columns:
+            #encode_text_dummy(df_train, feature)
+
+
     for feature in categorical_features:
         if feature in df.columns:
             encode_text_dummy(df, feature)
 
-    df.to_csv('preprocessed_DNN.csv', encoding='utf-8', index=False) 
+    #df_sliced.to_csv('test_preprocessed_DNN.csv', encoding='utf-8', index=False)
+    #df_train.to_csv('train_preprocessed_DNN.csv', encoding='utf-8', index=False)
+    df.to_csv('CSV/preprocessed_DNN.csv', encoding='utf-8', index=False)
