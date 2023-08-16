@@ -64,6 +64,7 @@ def main():
         
         print_message(Fore.BLUE, "------------- RUNNING: MODELING -------------")
         modeling.dnn(df_features_label,df_features_type)
+        modeling.alternative_methods(df_features_label, df_features_type)
 
 
 if __name__ == "__main__":
