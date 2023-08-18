@@ -1,8 +1,11 @@
+import cudf
+import cuml
+from cuml.neighbors import KNeighborsClassifier 
+from tqdm import tqdm
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
@@ -105,8 +108,9 @@ def alternative_methods(df_label, df_type):
     y_label = df_label['Attack_label']
 
     # Preparing the data for multiple classification
-    X_label_knn = df_type.drop(columns=['Attack_type'])
-    y_label_knn = df_label['Attack_type']
+    df_type_cudf = cudf.DataFrame.from_pandas(df_label)
+    X_label_knn = df_type_cudf.drop(columns=['Attack_type'])
+    y_label_knn = df_type_cudf['Attack_type']
 
     # Splitting data into train and test sets for binary classification
     X_label_train, X_label_test, y_label_train, y_label_test = train_test_split(X_label, y_label, test_size=0.3, random_state=42)
@@ -132,9 +136,8 @@ def alternative_methods(df_label, df_type):
     accuracies_knn = []
     f1_scores_knn = []
     neighbors = list(range(1,30))
-    knn = []
 
-    for k in neighbors:
+    for k in tqdm(neighbors, desc="Processing KNN", unit="neighbors"):
         knn_label = KNeighborsClassifier(n_neighbors=k)
         knn_label.fit(X_label_train_knn_scaled, y_label_train_knn)
         y_label_pred_knn = knn_label.predict(X_label_test_knn_scaled)
