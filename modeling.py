@@ -108,7 +108,7 @@ def alternative_methods(df_label, df_type):
     y_label = df_label['Attack_label']
 
     # Preparing the data for multiple classification
-    df_type_cudf = cudf.DataFrame.from_pandas(df_label)
+    df_type_cudf = cudf.DataFrame.from_pandas(df_type)
     X_label_knn = df_type_cudf.drop(columns=['Attack_type'])
     y_label_knn = df_type_cudf['Attack_type']
 
