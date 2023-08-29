@@ -5,7 +5,7 @@ from tqdm import tqdm
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score
-from sklearn.preprocessing import StandardScaler
+from cuml.preprocessing import StandardScaler as cuStandardScaler
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
@@ -124,7 +124,7 @@ def alternative_methods(df_label, df_type):
     X_label_test_scaled = scaler_label.transform(X_label_test)
 
     # Scaling the data
-    scaler_label = StandardScaler().fit(X_label_train_knn)
+    scaler_label = cuStandardScaler().fit(X_label_train_knn)
     X_label_train_knn_scaled = scaler_label.transform(X_label_train_knn)
     X_label_test_knn_scaled = scaler_label.transform(X_label_test_knn)
 
