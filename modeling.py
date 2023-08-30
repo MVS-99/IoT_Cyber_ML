@@ -1,10 +1,11 @@
 import cudf
-import cuml
-from cuml.neighbors import KNeighborsClassifier 
+from cuml.neighbors import KNeighborsClassifier
+from cupy import asnumpy
 from tqdm import tqdm
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.preprocessing import StandardScaler
 from cuml.preprocessing import StandardScaler as cuStandardScaler
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -38,7 +39,7 @@ def dnn(df_label, df_type):
 
     # Building DNN for binary classification (Attack_label)
     model_label = tf.keras.Sequential([
-        tf.keras.layers.Dense(128, activation='relu', input_shape=(X_label_train_scaled.shape[1],)),
+        tf.keras.layers.Dense(21, activation='relu', input_shape=(X_label_train_scaled.shape[1],)),
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dropout(0.2),
@@ -52,7 +53,7 @@ def dnn(df_label, df_type):
 
     # Building DNN for multi-class classification (Attack_type)
     model_type = tf.keras.Sequential([
-        tf.keras.layers.Dense(128, activation='relu', input_shape=(X_type_train_scaled.shape[1],)),
+        tf.keras.layers.Dense(21, activation='relu', input_shape=(X_type_train_scaled.shape[1],)),
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dropout(0.2),
@@ -141,12 +142,13 @@ def alternative_methods(df_label, df_type):
         knn_label = KNeighborsClassifier(n_neighbors=k)
         knn_label.fit(X_label_train_knn_scaled, y_label_train_knn)
         y_label_pred_knn = knn_label.predict(X_label_test_knn_scaled)
-        accuracies_knn.append(accuracy_score(y_label_test_knn, y_label_pred_knn))
-        f1_scores_knn.append(f1_score(y_label_test, y_label_pred_knn))
+        accuracies_knn.append(accuracy_score( asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn)))
+        f1_scores_knn.append(f1_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn), average='weighted'))
+
         
     # Plotting the accuracies for different k-values
     plt.figure(figsize=(10,6))
-    sns.lineplot(neighbors, accuracies_knn, marker='o', linestyle='-')
+    sns.lineplot(x=neighbors, y=accuracies_knn, marker='o', linestyle='-')
     plt.title('KNN Accuracy for different k values')
     plt.xlabel('Number of Neighbors')
     plt.ylabel('Accuracy')
