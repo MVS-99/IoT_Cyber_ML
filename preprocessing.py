@@ -12,12 +12,12 @@ def library_check():
         # Install the kaggle package
         subprocess.run(["conda", "install", "-c", "conda-forge", "kaggle"])
 
-    if 'tqdm' in {pkg.key for pkg in pkg_resources.working_set}:
-        print("The Kaggle package is already installed.")
+    if 'cuml' or 'cudf' in {pkg.key for pkg in pkg_resources.working_set}:
+        print("The cuml and cudf package are already installed.")
     else:
-        print("The Kaggle package is not installed. Initiating installation...")
+        print("The CuML package is not installed. Initiating installation...")
         # Install the kaggle package
-        subprocess.run(["conda", "install", "-c", "conda-forge", "tqdm"])
+        subprocess.run(["conda", "install", "--solver=libmamba", "conda-forge", "cuml", "cudf"])
 
     # Check if the kaggle package is installed
     if 'matplotlib' in {pkg.key for pkg in pkg_resources.working_set}:

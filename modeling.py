@@ -1,4 +1,5 @@
 import cudf
+import pandas as pd
 from cuml.neighbors import KNeighborsClassifier
 from cupy import asnumpy
 from tqdm import tqdm
@@ -47,7 +48,24 @@ def dnn(df_label, df_type):
     ])
 
     model_label.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    model_label.fit(X_label_train_scaled, y_label_train, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
+    history_label = model_label.fit(X_label_train_scaled, y_label_train, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
+
+    df_loss = pd.DataFrame({
+        'Epoch': range(1, len(history_label.history['loss']) + 1),
+        'Training_Loss': history_label.history['loss'],
+        'Validation_Loss': history_label.history['val_loss']
+    })
+
+    # Create a Seaborn lineplot
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(x='Epoch', y='Training_Loss', data=df_loss, marker='o', label='Training Loss')
+    sns.lineplot(x='Epoch', y='Validation_Loss', data=df_loss, marker='s', label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Loss Curve for DNN - Binary Classification')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
     print(Fore.GREEN + "DNN for solving Multiple Classification - (Which Attack)" + Fore.RESET)
 
@@ -61,7 +79,25 @@ def dnn(df_label, df_type):
     ])
 
     model_type.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model_type.fit(X_type_train_scaled, y_type_train, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
+    history_type = model_type.fit(X_type_train_scaled, y_type_train, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
+
+    df_loss_type = pd.DataFrame({
+        'Epoch': range(1, len(history_type.history['loss']) + 1),
+        'Training_Loss': history_type.history['loss'],
+        'Validation_Loss': history_type.history['val_loss']
+    })
+
+    # Create a Seaborn lineplot
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(x='Epoch', y='Training_Loss', data=df_loss_type, marker='o', label='Training Loss')
+    sns.lineplot(x='Epoch', y='Validation_Loss', data=df_loss_type, marker='s', label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Loss Curve for DNN - Binary Classification')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 
     y_label_pred = (model_label.predict(X_label_test_scaled) > 0.5).astype("int32")
     accuracy_label = accuracy_score(y_label_test, y_label_pred)
@@ -136,14 +172,15 @@ def alternative_methods(df_label, df_type):
     # Training KNN for binary classification
     accuracies_knn = []
     f1_scores_knn = []
-    neighbors = list(range(1,30))
+    neighbors = list(range(3,30))
+    y_label_pred_knn_vector =[]
 
     for k in tqdm(neighbors, desc="Processing KNN", unit="neighbors"):
         knn_label = KNeighborsClassifier(n_neighbors=k)
         knn_label.fit(X_label_train_knn_scaled, y_label_train_knn)
-        y_label_pred_knn = knn_label.predict(X_label_test_knn_scaled)
-        accuracies_knn.append(accuracy_score( asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn)))
-        f1_scores_knn.append(f1_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn), average='weighted'))
+        y_label_pred_knn_vector.append(knn_label.predict(X_label_test_knn_scaled))
+        accuracies_knn.append(accuracy_score( asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn_vector[-1])))
+        f1_scores_knn.append(f1_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn_vector[-1]), average='weighted'))
 
         
     # Plotting the accuracies for different k-values
@@ -155,6 +192,16 @@ def alternative_methods(df_label, df_type):
     plt.grid(True)
     plt.show()
 
+    # Plotting the f1-scores for different k-values
+    plt.figure(figsize=(10,6))
+    sns.lineplot(x=neighbors, y=f1_scores_knn, marker='o', linestyle='-')
+    plt.title('KNN F1-Score for different k values')
+    plt.xlabel('Number of Neighbors')
+    plt.ylabel('F1-Score')
+    plt.grid(True)
+    plt.show()
+
+
     # Find optimal k (highest accuracy) without overfitting
     optimal_k_acc = neighbors[accuracies_knn.index(max(accuracies_knn))]
     optimal_k_f1 = neighbors[f1_scores_knn.index(max(f1_scores_knn))]
@@ -162,14 +209,12 @@ def alternative_methods(df_label, df_type):
     print(f"The optimal number of neighbors is {optimal_k_f1} based on F1-Score")
 
     # Using optimal k for final evaluation
-    knn_label = KNeighborsClassifier(n_neighbors=optimal_k_f1)
-    knn_label.fit(X_label_train_scaled, y_label_train)
-    y_label_pred_knn = knn_label.predict(X_label_test_scaled)
+    y_label_pred_knn = y_label_pred_knn_vector[optimal_k_acc]
 
     # Metrics for the optimal k
-    precision_kf1 = precision_score(y_label_test, y_label_pred_knn)
-    recall_kf1= recall_score(y_label_test, y_label_pred_knn)
-    f1_kf1 = f1_score(y_label_test, y_label_pred_knn)
+    precision_kf1 = precision_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn))
+    recall_kf1= recall_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn))
+    f1_kf1 = f1_score(asnumpy(y_label_test_knn), asnumpy(y_label_pred_knn), average='weighted')
 
     print(f"Precision: {precision_kf1}")
     print(f"Recall: {recall_kf1}")
@@ -177,10 +222,9 @@ def alternative_methods(df_label, df_type):
 
 
     # Confusion matrix for knn
-    cm = confusion_matrix(y_label_test, y_label_pred_knn)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap='Blues', cbar=False, 
-                xticklabels=['Predicted 0', 'Predicted 1'], yticklabels=['Actual 0', 'Actual 1'])
+    cm_knn = confusion_matrix(y_label_test, y_label_pred_knn)
+    plt.figure(figsize=(12,10))
+    sns.heatmap(cm_knn, annot=True, fmt='d',cmap='Blues', norm=colors.LogNorm())
     plt.title("Confusion Matrix - KNN")
     plt.show()
 
@@ -189,3 +233,12 @@ def alternative_methods(df_label, df_type):
     accuracy_label_svm = accuracy_score(y_label_test, y_label_pred_svm)
 
     print(accuracy_label_svm)
+
+    cm_svm = confusion_matrix(y_label_test, y_label_pred_svm)
+    # Plot heatmap
+    plt.figure(figsize=(8,6))
+    sns.heatmap(cm_svm, annot=True, fmt='g', cmap='Blues')
+    plt.xlabel('Predicted labels')
+    plt.ylabel('True labels')
+    plt.title('Confusion Matrix for Binary Classification - SVM')
+    plt.show()
